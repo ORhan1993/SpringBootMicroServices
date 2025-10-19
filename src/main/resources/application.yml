@@ -1,0 +1,18 @@
+resilience4j:
+  circuitbreaker:
+    instances:
+      notificationService: # Bu, devre kesicinin adıdır. Kodda bu ismi kullanacaksınız.
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED # Hata oranını sayım tabanlı bir pencerede hesaplar
+        slidingWindowSize: 10          # Penceredeki çağrı sayısı (son 10 çağrı)
+        minimumNumberOfCalls: 5        # Devre kesicinin hata oranını hesaplamaya başlaması için gereken minimum çağrı sayısı
+        permittedNumberOfCallsInHalfOpenState: 3 # Yarı açık durumda izin verilen test çağrısı sayısı
+        automaticTransitionFromOpenToHalfOpenEnabled: true # Açık durumdan yarı açık duruma otomatik geçişi etkinleştirir
+        waitDurationInOpenState: 10s   # Açık durumda ne kadar süre bekleneceği (10 saniye)
+        failureRateThreshold: 50       # Hata oranı eşiği (%). Son 'slidingWindowSize' çağrının %50'si hatalıysa devre açılır.
+        eventConsumerBufferSize: 10    # Devre kesici olaylarını (açılma, kapanma vb.) tutmak için tampon boyutu
+        recordExceptions:              # Hangi istisnaların hata olarak sayılacağı
+          - org.springframework.web.client.HttpServerErrorException
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - org.springframework.web.client.ResourceAccessException
