@@ -1,4 +1,4 @@
-package org.bozgeyik.paymentservice.dto;
+package org.bozgeyik.paymentservice.client.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

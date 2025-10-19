@@ -1,14 +1,14 @@
-package org.bozgeyik.paymentservice.dto;
-
-
+// Paket 'dto' yerine 'client' olarak düzeltildi.
+package org.bozgeyik.paymentservice.client;
 
 import lombok.extern.slf4j.Slf4j;
-import org.bozgeyik.paymentservice.client.NotificationClient;
+// Eksik olan DTO import'u eklendi
+import org.bozgeyik.paymentservice.client.dto.NotificationRequest;
 import org.springframework.stereotype.Component;
 
 @Component // Spring tarafından yönetilmesi için
 @Slf4j
-public class NotificationClientFallback implements NotificationClient {
+public class NotificationClientFallback extends NotificationClient {
 
     @Override
     public void sendNotification(NotificationRequest notificationRequest) {

@@ -1,6 +1,8 @@
 package org.bozgeyik.paymentservice.model;
 
 public enum TransactionStatus {
-    PENDING, COMPLETED, FAILED
+    PENDING,
+    COMPLETED,
+    FAILED,
+    CANCELLED
 }
-

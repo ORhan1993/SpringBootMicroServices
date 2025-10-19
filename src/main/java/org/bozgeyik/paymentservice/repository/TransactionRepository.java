@@ -1,13 +1,14 @@
 package org.bozgeyik.paymentservice.repository;
 
-
-
 import org.bozgeyik.paymentservice.model.Transaction;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
-
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
-    List<Transaction> findByFromAccountOrToAccountOrderByTransactionDateDesc(String fromAccount, String toAccount);
+    // Idempotency kontrolü için
+    boolean existsByIdempotencyKey(String idempotencyKey);
 
+    // İşlem dökümü için (Pageable destekli)
+    Page<Transaction> findByFromWalletIdOrToWalletId(Long fromWalletId, Long toWalletId, Pageable pageable);
 }

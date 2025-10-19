@@ -1,22 +1,22 @@
 package org.bozgeyik.paymentservice.client;
 
+import org.bozgeyik.paymentservice.client.dto.NotificationRequest;
+import org.springframework.stereotype.Component;
+// import org.springframework.cloud.openfeign.FeignClient;
+// import org.springframework.web.bind.annotation.PostMapping;
 
+// @FeignClient(name = "notification-service")
+@Component // Feign yoksa geçici olarak Component yapalım
+public class NotificationClient {
+    // @PostMapping("/api/notifications")
+    // void sendNotification(NotificationRequest request);
 
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import org.bozgeyik.paymentservice.dto.NotificationClientFallback;
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-
-// "notification-service" -> application.yml/properties dosyasında Feign client'ın
-// bağlanacağı servisin adıdır (Eureka'da kayıtlı adı veya direkt URL olabilir).
-// fallback = NotificationClientFallback.class -> Devre kesici için fallback sınıfını belirtir.
-@FeignClient(name = "notification-service", fallback = NotificationClientFallback.class)
-public interface NotificationClient {
-
-    // application.yml dosyasındaki circuitbreaker instance adı ile aynı olmalı: "notificationService"
-    // Fallback metodu, fallback sınıfında (NotificationClientFallback) tanımlanacak.
-    @PostMapping("/api/notifications/send") // Bildirim servisindeki endpoint yolu
-    @CircuitBreaker(name = "notificationService") // Fallback metodu fallback sınıfından çağrılacak
-    void sendNotification(@RequestBody org.bozgeyik.paymentservice.dto.NotificationRequest notificationRequest);
+    // Geçici implementasyon
+    public void sendNotification(NotificationRequest request) {
+        System.out.println("--- BİLDİRİM GÖNDERİLİYOR ---");
+        System.out.println("Kime: " + request.getCustomerId());
+        System.out.println("Tip: " + request.getNotificationType());
+        System.out.println("Mesaj: " + request.getMessage());
+        System.out.println("-----------------------------");
+    }
 }
