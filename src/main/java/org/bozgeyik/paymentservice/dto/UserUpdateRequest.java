@@ -1,17 +1,13 @@
 package org.bozgeyik.paymentservice.dto;
 
-
-import jakarta.validation.constraints.Email;
-import lombok.Data;
-
-@Data
 public class UserUpdateRequest {
 
-    // Güncelleme işleminde bu alan zorunlu değil
     private String name;
-
-    // Güncelleme işleminde bu alan zorunlu değil,
-    // ancak varsa formatı geçerli olmalı.
-    @Email(message = "Geçerli bir e-posta adresi giriniz.")
     private String email;
+
+    // Getters and Setters
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 }

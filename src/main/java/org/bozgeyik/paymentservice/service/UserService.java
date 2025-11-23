@@ -1,7 +1,7 @@
 package org.bozgeyik.paymentservice.service;
 
-import org.bozgeyik.paymentservice.controller.dto.UserCreateRequest;
-import org.bozgeyik.paymentservice.controller.dto.UserUpdateRequest;
+import org.bozgeyik.paymentservice.dto.UserCreateRequest;
+import org.bozgeyik.paymentservice.dto.UserUpdateRequest;
 import org.bozgeyik.paymentservice.model.User;
 import org.bozgeyik.paymentservice.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;

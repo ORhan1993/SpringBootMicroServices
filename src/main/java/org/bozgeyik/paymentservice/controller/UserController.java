@@ -2,7 +2,7 @@ package org.bozgeyik.paymentservice.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.bozgeyik.paymentservice.controller.dto.UserCreateRequest;
+import org.bozgeyik.paymentservice.dto.UserCreateRequest;
 import org.bozgeyik.paymentservice.model.User;
 import org.bozgeyik.paymentservice.service.UserService;
 import org.springframework.http.HttpStatus;
