@@ -19,16 +19,19 @@ public class Wallet {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "customer_id", unique = true, nullable = false)
-    private String customerId;
+    // KALDIRILDI: customerId, ownerName ve email alanları User entity'sine taşındı.
+    // YENİ: User entity'si ile ilişki kuruldu.
+    // Bir cüzdan bir kullanıcıya aittir (Many-to-One).
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    @ToString.Exclude // Döngüsel bağımlılığı önlemek için
+    private User user;
 
-    @Column(name = "owner_name", nullable = false)
-    private String ownerName;
+    @Column(name = "iban", unique = true, length = 34)
+    private String iban;
 
-    // --- YENİ EKLENDİ ---
-    @Column(name = "email", nullable = false, unique = true)
-    private String email;
-    // --- BİTTİ ---
+    @Column(name = "bank_name", length = 100)
+    private String bankName;
 
     @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @EqualsAndHashCode.Exclude
@@ -46,4 +49,16 @@ public class Wallet {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // Bu "transient" (geçici) metotlar, doğrudan User nesnesinden bilgi almayı kolaylaştırır.
+    // Thymeleaf şablonlarında veya servislerde "wallet.userName" gibi ifadelere izin verir.
+    @Transient
+    public String getUserName() {
+        return user != null ? user.getName() : null;
+    }
+
+    @Transient
+    public String getEmail() {
+        return user != null ? user.getEmail() : null;
+    }
 }

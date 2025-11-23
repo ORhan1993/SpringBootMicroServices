@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        .container { width: 90%; max-width: 600px; margin: 20px auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+        .header { background-color: #004481; padding: 20px; text-align: center; }
+        .header img { max-width: 150px; } /* Logo için */
+        .content { padding: 30px; }
+        .content h1 { color: #004481; font-size: 24px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .content p { font-size: 16px; line-height: 1.6; }
+        .details { margin-top: 20px; border-collapse: collapse; width: 100%; }
+        .details th, .details td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        .details th { background-color: #f9f9f9; width: 40%; }
+        .footer { background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 12px; color: #777; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <img src="httpsD://logo.url/buraya" alt="Şirket Logosu" th:if="${logoUrl != null}" th:src="${logoUrl}" />
+        <h2 style="color: white; margin: 0;" th:text="${mailBaslik}">Para Transferi</h2>
+    </div>
+    <div class="content">
+        <h1 th:text="${anaBaslik}">Para Transferi Bilgilendirmesi</h1>
+        <p th:text="${'Değerli ' + musteriAdi + ','}">Değerli Müşterimiz,</p>
+        <p th:text="${aciklamaMetni}">İşleminiz başarıyla gerçekleşmiştir.</p>
+
+        <table class="details">
+            <tr th:if="${gonderenAdi != null}">
+                <th>Gönderen Bilgileri</th>
+                <td th:text="${gonderenAdi}">ORHAN BOZGEYİK</td>
+            </tr>
+            <tr th:if="${gonderenHesap != null}">
+                <th>Gönderen Hesap</th>
+                <td th:text="${gonderenHesap}">TR00...</td>
+            </tr>
+
+            <tr th:if="${aliciAdi != null}">
+                <th>Alıcı Bilgileri</th>
+                <td th:text="${aliciAdi}">Orhan Bozgeyik</td>
+            </tr>
+            <tr th:if="${aliciIban != null}">
+                <th>Alıcı IBAN</th>
+                <td th:text="${aliciIban}">TR6500...</td>
+            </tr>
+            <tr th:if="${aliciBanka != null}">
+                <th>Alıcı Banka</th>
+                <td th:text="${aliciBanka}">ENPARA BANK A.Ş.</td>
+            </tr>
+
+            <tr>
+                <th>Tutar</th>
+                <td><b th:text="${tutar}">12.000,00 TL</b></td>
+            </tr>
+            <tr>
+                <th>İşlem Tarihi</th>
+                <td th:text="${islemTarihi}">15.10.2025 09:03</td>
+            </tr>
+            <tr>
+                <th>İşlem ID</th>
+                <td th:text="${islemId}">6629971-abc</td>
+            </tr>
+            <tr th:if="${aciklama != null}">
+                <th>Açıklama</th>
+                <td th:text="${aciklama}">-</td>
+            </tr>
+        </table>
+    </div>
+    <div class="footer">
+        <p>&copy; 2025 Şirket Adınız. Tüm hakları saklıdır.</p>
+    </div>
+</div>
+</body>
+</html>

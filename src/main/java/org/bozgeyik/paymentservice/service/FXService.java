@@ -1,6 +1,5 @@
 package org.bozgeyik.paymentservice.service;
 
-import jakarta.annotation.PostConstruct; // Bu import gerekli
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.bozgeyik.paymentservice.model.ExchangeRate;
@@ -10,72 +9,55 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+/**
+ * Döviz Kuru (Foreign Exchange) işlemlerini yöneten servis sınıfı.
+ * Bu servis, para birimleri arasındaki dönüşüm oranlarını sağlar ve tutar dönüştürme işlemlerini gerçekleştirir.
+ */
 @Service
 @RequiredArgsConstructor
 public class FXService {
 
     private final ExchangeRateRepository rateRepository;
 
-    // --- BLOK GÜNCELLENDİ ---
-    @PostConstruct
-    public void initRates() {
-        if (rateRepository.count() == 0) {
-            // Hatalı constructor kullanımı yerine setter'ları kullanıyoruz
-
-            ExchangeRate rate1 = new ExchangeRate();
-            rate1.setFromCurrency("USD");
-            rate1.setToCurrency("TRY");
-            rate1.setRate(new BigDecimal("33.50"));
-            rateRepository.save(rate1);
-
-            ExchangeRate rate2 = new ExchangeRate();
-            rate2.setFromCurrency("TRY");
-            rate2.setToCurrency("USD");
-            rate2.setRate(new BigDecimal("0.0298"));
-            rateRepository.save(rate2);
-
-            ExchangeRate rate3 = new ExchangeRate();
-            rate3.setFromCurrency("EUR");
-            rate3.setToCurrency("TRY");
-            rate3.setRate(new BigDecimal("36.20"));
-            rateRepository.save(rate3);
-
-            ExchangeRate rate4 = new ExchangeRate();
-            rate4.setFromCurrency("TRY");
-            rate4.setToCurrency("EUR");
-            rate4.setRate(new BigDecimal("0.0276"));
-            rateRepository.save(rate4);
-
-            ExchangeRate rate5 = new ExchangeRate();
-            rate5.setFromCurrency("USD");
-            rate5.setToCurrency("EUR");
-            rate5.setRate(new BigDecimal("0.92"));
-            rateRepository.save(rate5);
-
-            ExchangeRate rate6 = new ExchangeRate();
-            rate6.setFromCurrency("EUR");
-            rate6.setToCurrency("USD");
-            rate6.setRate(new BigDecimal("1.08"));
-            rateRepository.save(rate6);
-        }
-    }
-    // --- GÜNCELLEME SONU ---
-
+    /**
+     * Belirtilen para birimleri arasındaki dönüşüm oranını (kurunu) getirir.
+     *
+     * @param from Kaynak para birimi kodu (örn: "USD").
+     * @param to   Hedef para birimi kodu (örn: "TRY").
+     * @return Dönüşüm oranı olarak {@link BigDecimal}.
+     * @throws EntityNotFoundException Eğer belirtilen kur veritabanında bulunamazsa.
+     */
     public BigDecimal getRate(String from, String to) {
-        if (from.equals(to)) {
+        // Eğer kaynak ve hedef para birimi aynı ise, dönüşüm oranı 1'dir.
+        if (from.equalsIgnoreCase(to)) {
             return BigDecimal.ONE;
         }
+        // Veritabanından kuru bul ve döndür. Bulunamazsa hata fırlat.
         return rateRepository.findByFromCurrencyAndToCurrency(from, to)
                 .map(ExchangeRate::getRate)
-                .orElseThrow(() -> new EntityNotFoundException("Kur bulunamadı: " + from + " -> " + to));
+                .orElseThrow(() -> new EntityNotFoundException("Dönüşüm kuru bulunamadı: " + from + " -> " + to));
     }
 
+    /**
+     * Belirtilen bir tutarı, bir para biriminden diğerine dönüştürür.
+     *
+     * @param amount Dönüştürülecek para tutarı.
+     * @param from   Kaynak para birimi kodu.
+     * @param to     Hedef para birimi kodu.
+     * @return Dönüştürülmüş ve yuvarlanmış para tutarı.
+     */
     public BigDecimal convert(BigDecimal amount, String from, String to) {
-        if (from.equals(to)) {
+        // Eğer para birimleri aynı ise, herhangi bir dönüşüm yapmaya gerek yok.
+        if (from.equalsIgnoreCase(to)) {
             return amount;
         }
+        // İlgili kuru al.
         BigDecimal rate = getRate(from, to);
-        // Uluslararası scale=4 ve bankacı yuvarlaması
-        return amount.multiply(rate).setScale(4, RoundingMode.HALF_UP);
+        
+        // Tutarı kur ile çarp ve sonucu yuvarla.
+        // Finansal hesaplamalarda genellikle `HALF_EVEN` (Banker's Rounding) kullanılır.
+        // Bu yuvarlama modu, istatistiksel olarak daha az yanlıdır.
+        // 4 ondalık basamak hassasiyeti (scale) çoğu finansal sistem için standart bir yaklaşımdır.
+        return amount.multiply(rate).setScale(4, RoundingMode.HALF_EVEN);
     }
 }
