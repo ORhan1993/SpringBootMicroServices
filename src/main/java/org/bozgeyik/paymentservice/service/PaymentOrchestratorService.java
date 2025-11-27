@@ -33,6 +33,9 @@ public class PaymentOrchestratorService {
     private final FXService fxService;
     private final NotificationClient notificationClient;
     private final ApplicationEventPublisher eventPublisher;
+    private final MockSwiftService mockSwiftService;
+    // Komisyon oranı (%5) - Sabit olarak tanımlayalım
+    private static final BigDecimal SWIFT_FEE_RATE = new BigDecimal("0.05");
 
     @Transactional
     public Transaction depositOnRamp(DepositRequest request) {
@@ -230,5 +233,100 @@ public class PaymentOrchestratorService {
     private void handleFailedTransaction(FxRequest request, Wallet wallet, Exception e, BigDecimal convertedAmount, BigDecimal rate) {
         createTransactionEntry(request.getIdempotencyKey(), wallet != null ? wallet.getId() : null, wallet != null ? wallet.getId() : null, request.getAmount(), request.getFromCurrency(), convertedAmount, request.getToCurrency(), rate, "BAŞARISIZ: " + e.getMessage(), TransactionType.FX_TRADE, TransactionStatus.FAILED);
         rethrowSpecificExceptions(e, "FX işlemi sırasında beklenmeyen hata");
+    }
+
+    @Transactional
+    public Transaction externalTransfer(ExternalTransferRequest request) {
+        checkIdempotency(request.getIdempotencyKey());
+
+        // 1. Cüzdanı ve Bakiyeyi Kontrol Et
+        Wallet fromWallet = walletService.getWalletByUserEmailAndCurrency(
+                request.getFromCustomerId(),
+                request.getCurrency()
+        );
+
+        // 2. Komisyon Hesabı (Tutar * 0.05)
+        BigDecimal fee = request.getAmount().multiply(SWIFT_FEE_RATE);
+        BigDecimal totalDeduction = request.getAmount().add(fee);
+
+        log.info("Dış Transfer: Tutar={}, Komisyon={}, Toplam Düşülecek={}", request.getAmount(), fee, totalDeduction);
+
+        try {
+            // 3. Parayı (Tutar + Komisyon) Müşteriden Düş
+            // LedgerService, bakiye yetersizse hata fırlatacak ve işlem duracaktır.
+            ledgerService.updateBalance(fromWallet.getId(), request.getCurrency(), totalDeduction.negate());
+
+            // 4. SWIFT Servisini Çağır (Bu işlem 2-4 saniye sürebilir)
+            boolean isSuccess = mockSwiftService.processTransfer(
+                    request.getToIban(),
+                    request.getSwiftCode(),
+                    request.getReceiverName(),
+                    request.getAmount().doubleValue()
+            );
+
+            // 5. SWIFT Başarısız Olduysa Hata Fırlat (Otomatik Rollback yapar ve parayı iade eder)
+            if (!isSuccess) {
+                throw new RuntimeException("Karşı banka transferi reddetti.");
+            }
+
+            // 6. Başarılıysa Kayıt At
+            return handleSuccessfulExternalTransfer(request, fromWallet, fee);
+
+        } catch (Exception e) {
+            log.error("Dış transfer hatası: {}", e.getMessage());
+
+            // Hata mesajını güvenli boyuta getir (Maksimum 250 karakter alalım ki ön ek ile taşmasın)
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Bilinmeyen Hata";
+            if (errorMessage.length() > 250) {
+                errorMessage = errorMessage.substring(0, 250) + "...";
+            }
+
+            // Veritabanına "BAŞARISIZ" kaydı at
+            createTransactionEntry(
+                    request.getIdempotencyKey(),
+                    fromWallet.getId(),
+                    null,
+                    request.getAmount(),
+                    request.getCurrency(),
+                    request.getAmount(),
+                    request.getCurrency(),
+                    BigDecimal.ONE,
+                    "SWIFT BAŞARISIZ: " + errorMessage, // Kırpılmış mesajı kullanıyoruz
+                    TransactionType.EXTERNAL_TRANSFER,
+                    TransactionStatus.FAILED
+            );
+            throw new RuntimeException("Dış transfer gerçekleştirilemedi: " + errorMessage);
+        }
+    }
+
+    // Yardımcı Metot: Başarılı dış transferi kaydet ve bildirim gönder
+    private Transaction handleSuccessfulExternalTransfer(ExternalTransferRequest request, Wallet wallet, BigDecimal fee) {
+        String description = String.format("SWIFT Transferi (Komisyon: %s %s)", fee, request.getCurrency());
+
+        Transaction transaction = createTransactionEntry(
+                request.getIdempotencyKey(),
+                wallet.getId(),
+                null, // Alıcı cüzdan ID yok (Dışarı gitti)
+                request.getAmount(),
+                request.getCurrency(),
+                request.getAmount(),
+                request.getCurrency(),
+                BigDecimal.ONE,
+                description,
+                TransactionType.EXTERNAL_TRANSFER,
+                TransactionStatus.COMPLETED
+        );
+
+        sendNotification(
+                wallet.getUser().getCustomerId(),
+                String.format("SWIFT işleminiz onaylandı. Gönderilen: %s %s, Kesilen Komisyon: %s %s",
+                        request.getAmount(), request.getCurrency(), fee, request.getCurrency()),
+                "SWIFT_SENT"
+        );
+
+        // Event fırlat (Email servisi dinliyorsa mail atar)
+        eventPublisher.publishEvent(new TransactionCompletedEvent(this, transaction));
+
+        return transaction;
     }
 }

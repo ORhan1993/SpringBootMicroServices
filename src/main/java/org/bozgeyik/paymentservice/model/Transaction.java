@@ -39,7 +39,7 @@ public class Transaction {
     @Column(name = "exchange_rate_used", precision = 19, scale = 8)
     private BigDecimal exchangeRateUsed;
 
-    @Column(name = "description")
+    @Column(name = "description", length = 1000)
     private String description;
 
     @Enumerated(EnumType.STRING)

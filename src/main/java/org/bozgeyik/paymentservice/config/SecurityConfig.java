@@ -1,37 +1,64 @@
 package org.bozgeyik.paymentservice.config;
 
+import lombok.RequiredArgsConstructor;
+import org.bozgeyik.paymentservice.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final JwtAuthenticationFilter jwtAuthFilter;
+    private final CustomUserDetailsService userDetailsService;
+
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        // BCrypt, endüstri standardı, güçlü bir hash algoritmasıdır.
-        return new BCryptPasswordEncoder();
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable()) // Token tabanlı olduğu için CSRF kapalı
+                .authorizeHttpRequests(auth -> auth
+                        // 1. Bu yollara herkes erişebilir (Giriş, Kayıt, Actuator)
+                        .requestMatchers("/auth/**", "/users", "/actuator/**").permitAll()
+                        // 2. Diğer tüm istekler Token (Kimlik Doğrulama) gerektirir
+                        .anyRequest().authenticated()
+                )
+                // Oturum yönetimi yok (Stateless), her istekte Token bakılacak
+                .sessionManagement(sess -> sess
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable()) // API'ler için genellikle devre dışı bırakılır
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // REST API için STATELESS
-                .authorizeHttpRequests(authz -> authz
-                        // DİKKAT: Bu ayar tüm endpoint'leri herkese açık hale getirir.
-                        // Sadece geliştirme ve test aşamaları için kullanılmalıdır.
-                        .anyRequest().permitAll()
-                )
-                .httpBasic(httpBasic -> httpBasic.disable()); // Basic Auth'u da devre dışı bırakıyoruz
-        return http.build();
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

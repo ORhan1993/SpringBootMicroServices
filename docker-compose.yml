@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # MySQL Veritabanı Servisi
+  mysqldb:
+    image: mysql:8.0
+    container_name: payment-mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: payment_db
+      MYSQL_ROOT_PASSWORD: 1
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Spring Boot Uygulama Servisi
+  app:
+    build: .
+    container_name: payment-service-app
+    depends_on:
+      mysqldb:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/payment_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 1
+      SPRING_PROFILES_ACTIVE: docker
+
+volumes:
+  db_data:

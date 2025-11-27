@@ -91,4 +91,10 @@ public class PaymentController {
                         .collect(Collectors.toSet())
         );
     }
+
+    @PostMapping("/payments/external-transfer")
+    public ResponseEntity<Transaction> externalTransfer(@Valid @RequestBody ExternalTransferRequest request) {
+        Transaction transaction = paymentOrchestratorService.externalTransfer(request);
+        return ResponseEntity.ok(transaction);
+    }
 }
