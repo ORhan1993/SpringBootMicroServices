@@ -60,4 +60,6 @@ public class FXService {
         // 4 ondalık basamak hassasiyeti (scale) çoğu finansal sistem için standart bir yaklaşımdır.
         return amount.multiply(rate).setScale(4, RoundingMode.HALF_EVEN);
     }
+
+
 }
