@@ -12,11 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 
-/**
- * Cüzdan (Wallet) ile ilgili iş mantığını yöneten servis sınıfı.
- * Cüzdan oluşturma, kapama ve sorgulama gibi işlemleri içerir.
- */
 @Service
 public class WalletService {
 
@@ -58,18 +55,15 @@ public class WalletService {
                 .orElseThrow(() -> new EntityNotFoundException("Cüzdan bulunamadı: ID " + walletId));
     }
 
-    /**
-     * Kullanıcı e-postası ve para birimine göre ilgili cüzdanı bulur.
-     *
-     * @param email    Kullanıcının e-posta adresi.
-     * @param currency Aranan cüzdanın para birimi (örn: "TRY", "USD").
-     * @return Eşleşen kriterlere sahip {@link Wallet} nesnesi.
-     * @throws EntityNotFoundException Eğer cüzdan bulunamazsa.
-     */
     public Wallet getWalletByUserEmailAndCurrency(String email, String currency) {
         return walletRepository.findByUserEmailAndCurrency(email, currency)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Kullanıcı için cüzdan bulunamadı: " + email + ", Para Birimi: " + currency));
+    }
+
+    // YENİ EKLENEN: Kullanıcının tüm cüzdanlarını getir
+    public List<Wallet> getWalletsByUserEmail(String email) {
+        return walletRepository.findAllByUserEmail(email);
     }
 
     @Transactional

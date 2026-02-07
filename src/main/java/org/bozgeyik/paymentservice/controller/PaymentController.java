@@ -17,10 +17,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/") // Base path kaldırıldı, endpoint'ler kök dizinden hizmet verecek.
+@RequestMapping("/")
 @RequiredArgsConstructor
 public class PaymentController {
 
@@ -37,6 +38,16 @@ public class PaymentController {
     public ResponseEntity<WalletBalanceResponse> getWalletById(@PathVariable Long walletId) {
         Wallet wallet = walletService.getWalletById(walletId);
         return ResponseEntity.ok(mapWalletToResponse(wallet));
+    }
+
+    // YENİ EKLENEN: Kullanıcının tüm cüzdanlarını getir
+    @GetMapping("/wallets")
+    public ResponseEntity<List<WalletBalanceResponse>> getWalletsByUser(@RequestParam String customerId) {
+        List<Wallet> wallets = walletService.getWalletsByUserEmail(customerId);
+        List<WalletBalanceResponse> response = wallets.stream()
+                .map(this::mapWalletToResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/wallets/{walletId}")
@@ -83,6 +94,7 @@ public class PaymentController {
     private WalletBalanceResponse mapWalletToResponse(@NotNull Wallet wallet) {
         User user = wallet.getUser();
         return new WalletBalanceResponse(
+                wallet.getId(),
                 user.getId().toString(),
                 user.getName(),
                 wallet.getStatus(),

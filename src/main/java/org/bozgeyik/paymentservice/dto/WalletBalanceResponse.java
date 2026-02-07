@@ -9,6 +9,7 @@ import java.util.Set;
 @Data
 @AllArgsConstructor
 public class WalletBalanceResponse {
+    private Long walletId; // Yeni eklenen alan
     private String customerId;
     private String ownerName;
     private AccountStatus status;

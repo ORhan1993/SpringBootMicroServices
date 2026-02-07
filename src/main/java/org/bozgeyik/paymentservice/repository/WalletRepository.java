@@ -9,10 +9,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Cüzdan (Wallet) entity'si için veritabanı işlemlerini yöneten repository arayüzü.
- * JpaRepository'yi genişleterek temel CRUD operasyonlarını sağlar ve özel sorgular içerir.
- */
 @Repository
 public interface WalletRepository extends JpaRepository<Wallet, Long> {
 
@@ -26,14 +22,10 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
 
     Optional<Wallet> findByUser_IdAndBalances_Currency(Long userId, String currency);
 
-    /**
-     * Belirtilen kullanıcı e-postası ve para birimine göre cüzdanı bulur.
-     * Bu sorgu, tek bir veritabanı çağrısıyla cüzdanı, kullanıcıyı ve bakiye bilgilerini birleştirerek verimli bir şekilde getirir.
-     *
-     * @param email    Cüzdan sahibinin e-posta adresi.
-     * @param currency Cüzdanın ilişkili olduğu para birimi.
-     * @return Eşleşen kriterlere sahip cüzdanı içeren bir {@link Optional<Wallet>}. Bulunamazsa boş Optional döner.
-     */
     @Query("SELECT w FROM Wallet w JOIN w.user u JOIN w.balances b WHERE u.email = :email AND b.currency = :currency")
     Optional<Wallet> findByUserEmailAndCurrency(@Param("email") String email, @Param("currency") String currency);
+
+    // YENİ EKLENEN: Kullanıcının e-postasına göre tüm cüzdanlarını getir
+    @Query("SELECT w FROM Wallet w JOIN FETCH w.user u LEFT JOIN FETCH w.balances WHERE u.email = :email")
+    List<Wallet> findAllByUserEmail(@Param("email") String email);
 }
